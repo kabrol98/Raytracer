@@ -1,12 +1,11 @@
 #ifndef VEC3H
 #define VEC3H
 #include <stdlib.h>
-#include <iostream>
 #include <math.h>
 
 class vec3 {
 public:
-  vec3();
+  vec3() {}
   vec3(float x, float y, float z) {e[0] = x; e[1] = y; e[2] = z; }
   inline float x() const {return e[0];}
   inline float y() const {return e[1];}
@@ -38,6 +37,7 @@ public:
 
   float e[3];
 };
+
 
 inline std::istream& operator>>(std::istream &is, vec3 &v)
 {
@@ -157,4 +157,5 @@ inline vec3 unit_vector(vec3 v)
 {
   return v / v.length();
 }
+
 #endif
