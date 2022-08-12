@@ -2,6 +2,7 @@
 #define RAYH
 
 #include "vec3.h"
+#include <iostream>
 
 class ray
 {
@@ -15,5 +16,17 @@ class ray
     vec3 A;
     vec3 B;
 };
+
+inline std::istream& operator>>(std::istream &is, ray &r)
+{
+  is >> r.A >> r.B;
+  return is;
+}
+
+inline std::ostream& operator<<(std::ostream &os, const ray &r)
+{
+  os << "(" << r.A << ", " << r.B << ")";
+  return os;
+}
 
 #endif

@@ -1,41 +1,52 @@
 #include <iostream>
 #include <fstream>
 #include <algorithm>
-#include <assert.h>
 #include <stdlib.h>
 #include "ray.h"
 #include "vec3.h"
 #include "sphere.h"
 #include "hitable.h"
 #include "util.h"
+#include "camera.h"
+#include "materials.h"
 #include "float.h"
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
 using namespace std;
 
-vec3 color(const ray &r, const hit_list &world)
+/// @brief return pixel color by querying world for a given light ray.
+/// @param r incoming light ray
+/// @param world list of hitable objects that produce colors when hit by the light ray.
+/// @param depth used to ensure light rays don't scatter infinitely.
+vec3 color(const ray &r, const hit_list *world, int depth)
 {
-  // Standard colors.
-  vec3 skyblue(.5, .5, 1);
-  vec3 white(1, 1, 1);
-  vec3 red(1,0.5,0.5);
-
-  // Background compute.
-  vec3 uv = unit_vector(r.direction());
-  float t = 0.5 * (uv.y() + 1);
-
   // Initialize hit record.
   hit_record rec;
   // Compute hitpoint.
-  bool hit = world.hit(r, 0, MAXFLOAT, rec);
+  bool hit = world->hit(r, 0.0001, MAXFLOAT, rec);
   if (hit)
   {
-    // Compute normal using color map. 
-    return 0.5 * (rec.normal + vec3(1,1,1));
+    /// Attempt to scatter light ray given depth required.
+    ray scattered;
+    vec3 attenuation;
+    if (depth < 50 && rec.mat->scatter(r, rec, attenuation, scattered))
+    {
+      /// Scatter light ray according to material recorded in hit record.
+      return attenuation * color(scattered, world, depth + 1);
+    } else 
+    {
+      /// Max depth was exceeded, or light was absorbed! 
+      /// Return black pixel to signify shadow.
+      return vec3(0,0,0);
+    }
   } else
   {
-    return (1 - t) * white + (t) * skyblue;
+    // Background compute.
+    vec3 uv = unit_vector(r.direction()); 
+    float t = 0.5 * (uv.y() + 1);
+    /// Evenly blend sky blue and white along the ray direction's y axis.
+    return (1 - t) * WHITE + (t) * SKYBLUE;
   }
 }
 
@@ -43,7 +54,7 @@ vec3 color(const ray &r, const hit_list &world)
 /// @param world List of objects to populate vector space.
 /// @param frame frame context
 vec3 **generate_image(
-  hit_list world,
+  hit_list *world,
   frame_ctx &frame)
 {
   int nX = frame.nX;
@@ -59,17 +70,26 @@ vec3 **generate_image(
     image[i] = (vec3 *) malloc(sizeof(vec3) * nY);
     for (int j = 0; j < nY; j ++)
     {
+      /// Sample light rays with slight variance
       /// Generate light ray from camera to frame position.
-      float u = float(i) / float(nX);
-      float v = float(j) / float(nY);
-      vec3 direction = frame.corner + (u * frame.horizontal) + (v * frame.vertical);
-      ray light(frame.camera, direction);
-      /// Send light ray into world, generate pixel value.
-      vec3 pixel = color(light, world);
+      vec3 pixel(0,0,0);
+      for (int s = 0; s < frame.nS; s++)
+      {
+        float u = (float(i) + drand48()) / float(nX);
+        float v = (float(j) + drand48()) / float(nY);
+        ray light = frame.cam.get_ray(u,v);
+        /// Send light ray into world, generate pixel value.
+        pixel += color(light, world, 0);
+      }
+      pixel /= frame.nS;
+      /// Gamma correct pixel value by taking the square root.
+      pixel = pixel.sqrt3();
+      
       /// Assign pixel value to image matrix.
-      assert (WITHIN(0,pixel.r(),1));
-      assert (WITHIN(0,pixel.g(),1));
-      assert (WITHIN(0,pixel.b(),1));
+      ASSERT(WITHIN(0,pixel.r(),1), "Pixel " << pixel << " out of bounds!");
+      ASSERT(WITHIN(0,pixel.r(),1), "Pixel " << pixel << " out of bounds!");
+      ASSERT(WITHIN(0,pixel.g(),1), "Pixel " << pixel << " out of bounds!");
+      ASSERT(WITHIN(0,pixel.b(),1), "Pixel " << pixel << " out of bounds!");
       image[i][j] = pixel;
     }
   }
@@ -80,12 +100,10 @@ vec3 **generate_image(
 /// @param Frame ctx reference
 void initialize_frame(frame_ctx &frame)
 {
-  frame.corner = vec3(-2, -1, -1);
-  frame.horizontal = vec3(4, 0, 0);
-  frame.vertical = vec3(0, 2, 0);
-  frame.camera = vec3(0, 0, 0);
+  frame.cam = camera();
   frame.nX = IMG_WIDTH;
   frame.nY = IMG_HEIGHT;
+  frame.nS = IMG_SAMPLES;
   return;
 }
 
@@ -93,26 +111,47 @@ void initialize_frame(frame_ctx &frame)
 ///
 /// Generate a list of hitable objects to display within frame.
 /// @param frame Frame context for frame limits. 
-hit_list generate_world(const frame_ctx &frame)
+hit_list *generate_world(const frame_ctx &frame)
 {
-  hit_list world = hit_list();
+  hit_list *world = new hit_list();
 
   /// TODO: Add more objects to hit list. 
   vec3 center = vec3(0,0,-2);
-  float radius = 0.5;
-  world.push((hitable *) new sphere(center, radius));
+  float radius = 0.8;
+  // material * matte_green = new lambertian(GREEN);
+  // material * matte_red = new lambertian(red);
+  /// Add matte green "planet" sphere below frame.
+  world->push(
+    new sphere(
+      vec3(0, -(100 + radius), -1), 
+      100,
+      new lambertian(GREEN)
+    ));
+  /// Add matte red sphere front and center
+  world->push(
+    (hitable *) new sphere(
+      center, 
+      radius,
+      new lambertian(RED)
+    ));
+  /// Add metal blue sphere to the left
+  world->push(
+    (hitable *) new sphere(
+      center - vec3(2 * radius,0,0), 
+      radius,
+      new metal(SKYBLUE)
+    ));
+  /// Add glass sphere to the right
+  world->push(
+    (hitable *) new sphere(
+      center + vec3(2 * radius,0,0), 
+      radius,
+      new dielectric(GLASS_IDX)
+      // new metal(SKYBLUE, 0.3)
+    ));
+  
 
   return world;
-}
-
-/// @brief Destroy world objects and free memory.
-/// @param world hitable list of heap allocated objects.
-void destroy_world(const hit_list &world)
-{
-  for (int i = 0; i < world.size(); i ++)
-  {
-
-  }
 }
 
 /// @brief Destroy heap allocated image buffer. 
@@ -129,6 +168,10 @@ void destroy_image(vec3 **image, const frame_ctx &frame)
   free(image);
 }
 
+/// @brief Write image buffer to .ppm file
+/// @param filename if non-null, writes to "file.ppm"
+/// @param image pixel matrix
+/// @param frame frame context
 int write_ppm(char * filename, vec3 **image, const frame_ctx &frame)
 {
   ofstream os;
@@ -161,13 +204,13 @@ int main(int c, char **argv)
   /// Initialize frame TODO: Allow for parameter to change frame options
   initialize_frame(frame);
   /// Generate world of hitable objects
-  hit_list world = generate_world(frame);
+  hit_list *world = generate_world(frame);
   /// Generate 2-D pixel matrix of frame
   vec3 ** image = generate_image(world, frame);
   /// Write generated image to ppm file TODO: support other file types.
   write_ppm(NULL, image, frame);
   /// Destroy objects, free memory
-  destroy_world(world);
+  delete world;
   destroy_image(image, frame);
 
   return 0;

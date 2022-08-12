@@ -2,24 +2,51 @@
 #define UTILH
 
 #include "vec3.h"
-
+#include "camera.h"
+#include "assert.h"
 /// Default values. 
-#define IMG_HEIGHT 400
-#define IMG_WIDTH 800
+#define IMG_HEIGHT 800
+#define IMG_WIDTH 1600
+#define IMG_SAMPLES 5
 #define WORLD_SIZE 1
 #define SPHERE_MAX 4
 #define WITHIN(a,x,b) a <= x && x <= b
 #define RANDF ((float)rand / RAND_MAX)
 
+/// Constant color values
+#define SKYBLUE       vec3(0.5,0.5,1)
+#define WHITE         vec3(1,1,1)
+#define BLACK         vec3(0,0,0)
+#define RED           vec3(1,0,0)
+#define GREEN         vec3(0,1,0)
+#define BLUE          vec3(0,0,1)
+#define GREYSCALE(x)  vec3(x,x,x)
+
+/// Refractive index constants
+#define GLASS_IDX   (1.5 + (drand48() * 0.2))
+#define DIAMOND_IDX 2.4
+#define AIR_IDX     1
+
+#ifndef NDEBUG
+#   define ASSERT(condition, message) \
+  do { \
+    if (! (condition)) { \
+      std::cerr << "Assertion `" #condition "` failed in " << __FILE__ \
+                << " line " << __LINE__ << ": " << message << std::endl; \
+      std::terminate(); \
+    } \
+  } while (false)
+#else
+#   define ASSERT(condition, message) do { } while (false)
+#endif
+
 /// Configuration for image frame
 typedef struct frame_ctx
 {
-  vec3 camera; /// Camera position
-  vec3 corner; /// top-left corner of iamge frame
-  vec3 horizontal; /// horizontal frame length
-  vec3 vertical; /// vertical frame length
+  camera cam;
   size_t nX; /// horizontal frame resolution
   size_t nY; /// vertical frame resolution
+  size_t nS; /// Anti-aliasing sample size
 } frame_ctx;
 
 #endif

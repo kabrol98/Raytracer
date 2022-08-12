@@ -27,6 +27,7 @@ public:
   inline vec3& operator*=(const float t);
   inline vec3& operator/=(const float t);
 
+  inline vec3 sqrt3() const { return vec3(sqrt(e[0]), sqrt(e[1]), sqrt(e[2])); } 
   inline float squared_length() const {
     return e[0] * e[0] + e[1] * e[1] + e[2] * e[2];
   }
@@ -47,7 +48,7 @@ inline std::istream& operator>>(std::istream &is, vec3 &v)
 
 inline std::ostream& operator<<(std::ostream &os, const vec3 &v)
 {
-  os << v.e[0] << " " << v.e[1] << " " << v.e[2];
+  os << "[" << v.e[0] << " " << v.e[1] << " " << v.e[2] << "]";
   return os;
 }
 
@@ -156,6 +157,51 @@ inline vec3& vec3::operator/=(const float t)
 inline vec3 unit_vector(vec3 v)
 {
   return v / v.length();
+}
+
+
+/// @brief Generate random vector inside a unit sphere
+vec3 random_in_unit_sphere()
+{
+  vec3 res;
+  do
+  {
+    res = 2 * vec3(drand48(),drand48(),drand48()) - vec3(1,1,1);
+  } while (res.squared_length() >= 1.0);
+  return res;
+}
+
+/// @brief Reflect vector v along normal n
+/// @param v vector
+/// @param n normal
+vec3 reflect(const vec3 &v, const vec3 &n)
+{
+  return v - (2 * dot(v,n) * n);
+}
+
+/// @brief Refract vector v along normal n with refractive index ratio r
+///
+/// Refraction is defined by n sin theta = n' sin theta'
+/// To find the refracted vector we get 
+/// theta = sin_inverse(sin theta * (n / n'))
+/// @param v vector
+/// @param n normal
+/// @param r refractive index ratio
+/// @param refracted (OUT) use refracted vector if returned true
+/// @return true iff refraction is possible.
+bool refract(const vec3 &v, const vec3 &n, float r, vec3 &refracted)
+{
+  vec3 uv = unit_vector(v);
+  float dt = dot(uv, n);
+  float discriminant = 1 - r * r * (1 - dt * dt);
+  if (discriminant > 0)
+  {
+    refracted = r * (uv - (n * dt)) - n * sqrt(discriminant);
+    return true;
+  } else 
+  {
+    return false;
+  }  
 }
 
 #endif

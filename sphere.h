@@ -5,17 +5,24 @@
 #include "vec3.h"
 #include "ray.h"
 #include "hitable.h"
+#include "materials.h"
+
+// class material;
 
 /// Defined by position vector and radius.
-class sphere : hitable
+class sphere : public hitable
 {
   public:
     sphere() {}
-    sphere(const vec3 &position, const float radius): center(position), rad(radius) {}
+    sphere(const vec3 &position, const float radius, material *m): center(position), rad(radius), mat(m) {
+      // cout << "Saved allocated material pointer " << m << "\n";
+    }
+    virtual ~sphere() {delete mat;} /// Free material pointer.
     float radius() const { return rad; }
-    bool hit(const ray &r, float t_min, float t_max, hit_record &rec) const;
+    virtual bool hit(const ray &r, float t_min, float t_max, hit_record &rec) const;
     vec3 center;
     float rad;
+    material *mat;
 };
 
 /// @brief Sphere hit method
@@ -43,7 +50,9 @@ bool sphere::hit(const ray &r, float t_min, float t_max, hit_record &rec) const
       /// Hit point P(t) can be computed from the ray
       rec.p = r.point_at_parameter(rec.t);
       /// Compute normal = unit vector of P - C
-      rec.normal = cross(r.direction(), rec.p - center);
+      rec.normal =  (rec.p - center) / radius();
+      /// Assign material to hit record.
+      rec.mat = mat;
       return true;
     } else {
       return false;
