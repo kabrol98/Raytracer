@@ -46,7 +46,7 @@ vec3 color(const ray &r, const hit_list *world, int depth)
     vec3 uv = unit_vector(r.direction()); 
     float t = 0.5 * (uv.y() + 1);
     /// Evenly blend sky blue and white along the ray direction's y axis.
-    return (1 - t) * SKYBLUE + (t) * WHITE;
+    return (1 - t) * WHITE + (t) * SKYBLUE;
   }
 }
 
@@ -100,10 +100,20 @@ vec3 **generate_image(
 /// @param Frame ctx reference
 void initialize_frame(frame_ctx &frame)
 {
-  frame.cam = camera();
-  frame.nX = IMG_WIDTH;
-  frame.nY = IMG_HEIGHT;
+  /// Define nX and nY by applying resolution to the aspect ratio.
+  frame.nY = IMG_RES;
+  frame.nX = IMG_RES * WIDESCREEN;
   frame.nS = IMG_SAMPLES;
+  /// Define lookfrom, lookat, vup to position and rotate camera.
+  vec3 lookfrom(-2,2,1);
+  vec3 lookat(0,0,-1);
+  vec3 vup (1,1,0);
+  frame.cam = camera(
+    lookfrom,
+    lookat,
+    vup,
+    90, 
+    WIDESCREEN);
   return;
 }
 
@@ -146,7 +156,7 @@ hit_list *generate_world(const frame_ctx &frame)
     (hitable *) new sphere(
       center + vec3(2 * radius,0,0), 
       radius,
-      new dielectric(GLASS_IDX)
+      new dielectric(DIAMOND_IDX)
     ));
   
 

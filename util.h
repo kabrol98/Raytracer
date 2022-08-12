@@ -5,16 +5,18 @@
 #include "camera.h"
 #include "assert.h"
 /// Default values. 
-#define IMG_HEIGHT 800
-#define IMG_WIDTH 1600
-#define IMG_SAMPLES 20
+#define IMG_RES 360
+#define WIDESCREEN 16.0 / 9.0
+#define IMG_HEIGHT IMG_RES
+#define IMG_WIDTH IMG_HEIGHT * WIDESCREEN
+#define IMG_SAMPLES 50
 #define WORLD_SIZE 1
 #define SPHERE_MAX 4
 #define WITHIN(a,x,b) a <= x && x <= b
 #define RANDF ((float)rand / RAND_MAX)
 
 /// Constant color values
-#define SKYBLUE       vec3(0.5,0.5,1)
+#define SKYBLUE       vec3(0.3,0.3,1)
 #define WHITE         vec3(1,1,1)
 #define BLACK         vec3(0,0,0)
 #define RED           vec3(1,0,0)
