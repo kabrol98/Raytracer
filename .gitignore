@@ -1,4 +1,6 @@
 # ignore ALL .log files
+main
+trace
 *.o
 *.ppm
 *.gdbinit
