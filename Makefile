@@ -17,9 +17,9 @@ main: main.o
 main.o: main.cc objects.o utils.o
 	$(CC) $(CFLAGS) -c main.cc
 
-objects.o: hitable.h sphere.h
+objects.o: hitable.h sphere.h materials.h
 
-utils.o: vec3.h ray.h
+utils.o: util.h vec3.h ray.h camera.h
 
 clean:
 	rm -rf ./*.o ./*.ppm trace ./*.gch

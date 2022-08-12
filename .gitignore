@@ -1,0 +1,9 @@
+# ignore ALL .log files
+*.o
+*.ppm
+*.gdbinit
+Doxyfile
+
+# ignore ALL files in ANY directory named temp
+.vscode/
+Dox/
