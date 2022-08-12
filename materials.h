@@ -62,31 +62,44 @@ class dielectric : public material
     {
       /// Generate reflected ray
       vec3 reflected = reflect(r_in.direction(), rec.normal);
-      scattered = ray(rec.p,reflected); return false;
-      /// Compute outward normal and refractive ratio for refraction
-      vec3 outward_normal, refracted;
       /// Set attenuation to white.
       attenuation = WHITE;
-      float ref_ratio;
+
+      /// Compute outward normal, cosine, refractive ratio for refraction
+      vec3 outward_normal, refracted;
+      float ref_ratio, cosine, reflect_prob;
       if (dot(r_in.direction(), rec.normal) > 0)
       {
         outward_normal = -rec.normal;
         ref_ratio = ref_idx;
+        /// TODO: Relearn trigonimetry to understand this math
+        // cosine = ref_idx * dot(r_in.direction(), rec.normal) / r_in.direction().length();
+        cosine = dot(r_in.direction(), rec.normal) / r_in.direction().length();
+        cosine = sqrt(1 - ref_idx*ref_idx*(1-cosine*cosine));
       } else 
       {
         outward_normal = rec.normal;
         ref_ratio = 1.0 / ref_idx;
+        cosine = -dot(r_in.direction(), rec.normal) / r_in.direction().length();
       }
-      /// Refract, return refracted vs. reflected ray based on discriminant
+      /// Define reflection probabililty based on whether refraction is possible
       if (refract(r_in.direction(), outward_normal, ref_ratio, refracted))
       {
-        scattered = ray(rec.p, refracted);
-        return true;
-      } else 
+        reflect_prob = schlick(cosine, ref_idx);
+        ASSERT(WITHIN(0,reflect_prob, 1), "Reflection probability out of bounds!\n");
+      } else {
+        reflect_prob = 1.0;
+      }
+
+      if (drand48() < reflect_prob)
       {
         scattered = ray(rec.p, reflected);
-        return false;
+        // return true;
+      } else 
+      {
+        scattered = ray(rec.p, refracted);
       }
+      return true;
     }
 
   private:

@@ -46,7 +46,7 @@ vec3 color(const ray &r, const hit_list *world, int depth)
     vec3 uv = unit_vector(r.direction()); 
     float t = 0.5 * (uv.y() + 1);
     /// Evenly blend sky blue and white along the ray direction's y axis.
-    return (1 - t) * WHITE + (t) * SKYBLUE;
+    return (1 - t) * SKYBLUE + (t) * WHITE;
   }
 }
 
@@ -147,7 +147,6 @@ hit_list *generate_world(const frame_ctx &frame)
       center + vec3(2 * radius,0,0), 
       radius,
       new dielectric(GLASS_IDX)
-      // new metal(SKYBLUE, 0.3)
     ));
   
 

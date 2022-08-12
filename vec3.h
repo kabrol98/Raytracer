@@ -193,10 +193,10 @@ bool refract(const vec3 &v, const vec3 &n, float r, vec3 &refracted)
 {
   vec3 uv = unit_vector(v);
   float dt = dot(uv, n);
-  float discriminant = 1 - r * r * (1 - dt * dt);
+  float discriminant = 1.0 - r * r * (1 - dt * dt);
   if (discriminant > 0)
   {
-    refracted = r * (uv - (n * dt)) - n * sqrt(discriminant);
+    refracted = r * (uv - n * dt) - n * sqrt(discriminant);
     return true;
   } else 
   {

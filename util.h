@@ -7,7 +7,7 @@
 /// Default values. 
 #define IMG_HEIGHT 800
 #define IMG_WIDTH 1600
-#define IMG_SAMPLES 5
+#define IMG_SAMPLES 20
 #define WORLD_SIZE 1
 #define SPHERE_MAX 4
 #define WITHIN(a,x,b) a <= x && x <= b
@@ -26,6 +26,9 @@
 #define GLASS_IDX   (1.5 + (drand48() * 0.2))
 #define DIAMOND_IDX 2.4
 #define AIR_IDX     1
+#define HOLLOW_GLASS_IDX   -(1.5 + (drand48() * 0.2))
+#define HOLLOW_DIAMOND_IDX -2.4
+#define HOLLOW_AIR_IDX     -1
 
 #ifndef NDEBUG
 #   define ASSERT(condition, message) \
@@ -48,5 +51,13 @@ typedef struct frame_ctx
   size_t nY; /// vertical frame resolution
   size_t nS; /// Anti-aliasing sample size
 } frame_ctx;
+
+/// Polynomial approximation for reflection probability.
+float schlick(float cosine, float ref_idx)
+{
+  float r0 = (1 - ref_idx) / (1 + ref_idx);
+  r0 *= r0;
+  return r0 + (1-r0) * pow(1 - cosine, 5);
+}
 
 #endif
